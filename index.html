@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鸚鵡日誌</title>
+<meta name="description" content="記錄每隻鸚鵡的體重、就醫與備註">
+<meta name="theme-color" content="#5a7a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="鸚鵡日誌">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap');
+
+:root {
+  --sage: #8aab8c;
+  --sage-light: #c5dbc6;
+  --sage-dark: #5a7a5c;
+  --cream: #faf6ef;
+  --warm: #f0e8d8;
+  --bark: #8b6f47;
+  --charcoal: #2d2d2d;
+  --muted: #7a7a6a;
+  --accent: #d4845a;
+  --accent-light: #f0c4a8;
+  --white: #ffffff;
+  --radius: 18px;
+  --shadow: 0 4px 24px rgba(90,122,92,0.10);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 10% 20%, rgba(138,171,140,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 90% 80%, rgba(212,132,90,0.08) 0%, transparent 60%);
+}
+
+/* ── Pages ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Header ── */
+header {
+  background: var(--sage-dark);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  position: sticky; top: 0; z-index: 100;
+}
+header h1 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.2rem;
+  color: var(--cream);
+  letter-spacing: .08em;
+  flex: 1;
+}
+.back-btn {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  color: var(--cream);
+  font-size: 1rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex; align-items: center; gap: 4px;
+}
+.back-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ── Home ── */
+.home-wrap { padding: 18px; max-width: 860px; margin: 0 auto; }
+.section-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: .95rem;
+  color: var(--sage-dark);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* Bird grid */
+.bird-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.bird-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: var(--shadow);
+  transition: all .2s;
+  position: relative;
+}
+.bird-card:hover {
+  border-color: var(--sage-light);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(90,122,92,0.15);
+}
+.bird-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--sage-light);
+  background: var(--warm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.bird-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bird-name {
+  font-weight: 700;
+  font-size: .9rem;
+  text-align: center;
+}
+.bird-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+}
+.bird-latest-weight {
+  font-size: .72rem;
+  color: var(--sage-dark);
+  background: var(--sage-light);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.bird-del-btn {
+  position: absolute;
+  top: 6px; right: 8px;
+  background: none; border: none;
+  color: #ccc; font-size: .8rem;
+  cursor: pointer; padding: 2px 5px;
+  border-radius: 6px;
+  transition: color .15s;
+  line-height: 1;
+}
+.bird-del-btn:hover { color: #e07070; }
+
+/* Add bird card */
+.add-bird-card {
+  background: transparent;
+  border: 2px dashed var(--sage-light);
+  border-radius: var(--radius);
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--sage);
+  font-size: .85rem;
+  font-weight: 700;
+  min-height: 150px;
+  transition: all .2s;
+}
+.add-bird-card:hover {
+  background: var(--sage-light);
+  color: var(--sage-dark);
+  border-style: solid;
+}
+.add-bird-card .plus { font-size: 2rem; }
+
+/* Summary strip */
+.summary-strip {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.summary-badge {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: var(--shadow);
+  flex: 1; min-width: 100px; text-align: center;
+}
+.summary-badge .val { font-size: 1.4rem; font-weight: 700; color: var(--sage-dark); }
+.summary-badge .lbl { font-size: .7rem; color: var(--muted); }
+
+/* Recent events */
+.recent-list { }
+.recent-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--white);
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(138,171,140,0.15);
+}
+.recent-bird-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--warm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.recent-bird-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.recent-body { flex: 1; font-size: .83rem; }
+.recent-bird-name { font-weight: 700; color: var(--sage-dark); font-size: .8rem; }
+.recent-date { font-size: .7rem; color: var(--muted); }
+.tag {
+  font-size: .65rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tag-vet { background: #ffd6d6; color: #a03030; }
+.tag-weight { background: var(--sage-light); color: var(--sage-dark); }
+.tag-note { background: var(--accent-light); color: var(--bark); }
+
+/* ── Bird detail ── */
+.detail-wrap { padding: 0; }
+nav.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 14px 16px 0;
+  overflow-x: auto;
+  background: var(--cream);
+  border-bottom: 2px solid var(--sage-light);
+  position: sticky; top: 60px; z-index: 90;
+}
+nav.tabs button {
+  font-family: inherit;
+  font-size: .82rem;
+  padding: 7px 16px;
+  border: 2px solid var(--sage-light);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .18s;
+}
+nav.tabs button.active {
+  background: var(--sage-dark);
+  border-color: var(--sage-dark);
+  color: var(--white);
+  font-weight: 700;
+}
+nav.tabs button:hover:not(.active) {
+  background: var(--sage-light);
+  color: var(--sage-dark);
+}
+.tab-content { display: none; padding: 18px; max-width: 800px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(138,171,140,0.15);
+}
+.card h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: .95rem;
+  color: var(--sage-dark);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* Profile */
+.profile-layout { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.avatar-wrap { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.avatar-lg {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--sage-light);
+  background: var(--warm);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem;
+  overflow: hidden;
+  transition: transform .2s;
+}
+.avatar-lg:hover { transform: scale(1.05); }
+.avatar-hint { font-size: .7rem; color: var(--muted); text-align: center; }
+.profile-fields { flex: 1; min-width: 200px; }
+.field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.field-row label { font-size: .78rem; color: var(--muted); width: 68px; flex-shrink: 0; font-weight: 700; }
+.field-row input, .field-row select {
+  flex: 1;
+  border: 1.5px solid var(--sage-light);
+  border-radius: 10px;
+  padding: 7px 11px;
+  font-family: inherit;
+  font-size: .88rem;
+  background: var(--cream);
+  color: var(--charcoal);
+  outline: none;
+  transition: border-color .2s;
+}
+.field-row input:focus, .field-row select:focus { border-color: var(--sage-dark); }
+.age-display { font-size: .72rem; color: var(--accent); margin-top: 2px; margin-left: 78px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  border-radius: 40px; border: none;
+  font-family: inherit; font-size: .82rem; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+}
+.btn-primary { background: var(--sage-dark); color: var(--white); }
+.btn-primary:hover { background: var(--sage); }
+.btn-accent { background: var(--accent); color: var(--white); }
+.btn-accent:hover { background: #c07040; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--sage-light); }
+.btn-ghost:hover { background: var(--sage-light); color: var(--sage-dark); }
+
+/* Weight */
+.weight-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.weight-input-row input {
+  border: 1.5px solid var(--sage-light);
+  border-radius: 10px;
+  padding: 7px 11px;
+  font-family: inherit; font-size: .88rem;
+  background: var(--cream); outline: none;
+}
+.weight-input-row input[type="number"] { width: 85px; }
+.weight-input-row .note-in { flex: 1; }
+.chart-wrap { position: relative; height: 200px; margin-top: 8px; }
+.stat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.stat-badge {
+  background: var(--warm);
+  border-radius: 10px;
+  padding: 7px 12px;
+  flex: 1; min-width: 80px; text-align: center;
+}
+.stat-badge .val { font-size: 1.1rem; font-weight: 700; color: var(--sage-dark); }
+.stat-badge .lbl { font-size: .68rem; color: var(--muted); }
+
+/* Vet / Notes forms */
+.form-block input, .form-block textarea, .form-block select {
+  width: 100%;
+  border: 1.5px solid var(--sage-light);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: inherit; font-size: .86rem;
+  background: var(--cream); color: var(--charcoal);
+  outline: none; margin-bottom: 9px;
+  resize: vertical; transition: border-color .2s;
+}
+.form-block input:focus, .form-block textarea:focus { border-color: var(--sage-dark); }
+.form-block label { font-size: .76rem; color: var(--muted); font-weight: 700; display: block; margin-bottom: 3px; }
+
+/* Records */
+.record-list { }
+.record-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--cream);
+  margin-bottom: 7px;
+  border: 1px solid var(--sage-light);
+  transition: box-shadow .15s;
+}
+.record-item:hover { box-shadow: 0 2px 10px rgba(90,122,92,0.1); }
+.record-date { font-size: .7rem; color: var(--muted); white-space: nowrap; min-width: 76px; }
+.record-body { flex: 1; font-size: .85rem; line-height: 1.5; }
+.record-del {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: .82rem; padding: 2px 5px;
+  border-radius: 6px; transition: color .15s;
+}
+.record-del:hover { color: #e07070; }
+.pin-badge {
+  display: inline-block; font-size: .65rem;
+  padding: 2px 6px; border-radius: 20px;
+  background: #fff3cd; color: #856404; font-weight: 700; margin-right: 4px;
+}
+.empty {
+  text-align: center; color: var(--muted);
+  font-size: .83rem; padding: 24px 0;
+}
+.empty .e-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+/* Modal */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+  opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+.modal-bg.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 26px 22px;
+  width: 100%; max-width: 380px;
+  transform: scale(.95); transition: transform .2s;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+}
+.modal-bg.open .modal { transform: scale(1); }
+.modal h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.05rem;
+  color: var(--sage-dark);
+  margin-bottom: 16px;
+}
+.modal input {
+  width: 100%;
+  border: 1.5px solid var(--sage-light);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit; font-size: .9rem;
+  background: var(--cream); outline: none;
+  margin-bottom: 12px; transition: border-color .2s;
+}
+.modal input:focus { border-color: var(--sage-dark); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+
+/* Toast */
+.save-toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--sage-dark); color: var(--white);
+  padding: 9px 16px; border-radius: 40px;
+  font-size: .8rem; font-weight: 700;
+  opacity: 0; transform: translateY(8px);
+  transition: all .25s; pointer-events: none; z-index: 999;
+}
+.save-toast.show { opacity: 1; transform: translateY(0); }
+
+#avatar-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME PAGE ══ -->
+<div id="page-home" class="page active">
+  <header>
+    <span>🦜</span>
+    <h1>鸚鵡日誌</h1>
+    <button class="back-btn" onclick="openAddBird()" style="font-size:.82rem;">＋ 新增鳥寶</button>
+  </header>
+
+  <div class="home-wrap">
+    <!-- Summary -->
+    <div class="summary-strip" id="summary-strip"></div>
+
+    <!-- Bird grid -->
+    <div class="section-title">🐦 我的鳥寶們</div>
+    <div class="bird-grid" id="bird-grid"></div>
+
+    <!-- Recent activity -->
+    <div class="section-title">🕐 最近紀錄</div>
+    <div id="recent-list"></div>
+  </div>
+</div>
+
+<!-- ══ BIRD DETAIL PAGE ══ -->
+<div id="page-detail" class="page">
+  <header>
+    <button class="back-btn" onclick="goHome()">← 返回</button>
+    <h1 id="detail-header-name">鳥寶日誌</h1>
+  </header>
+
+  <div class="detail-wrap">
+    <nav class="tabs">
+      <button class="active" onclick="switchDetailTab('profile', this)">🪪 資料卡</button>
+      <button onclick="switchDetailTab('weight', this)">⚖️ 體重</button>
+      <button onclick="switchDetailTab('vet', this)">🏥 就醫</button>
+      <button onclick="switchDetailTab('notes', this)">📝 備註</button>
+    </nav>
+
+    <!-- Profile tab -->
+    <div id="dtab-profile" class="tab-content active">
+      <div class="card">
+        <h2>🦜 資料卡</h2>
+        <div class="profile-layout">
+          <div class="avatar-wrap">
+            <div class="avatar-lg" id="d-avatar" onclick="document.getElementById('avatar-input').click()">🦜</div>
+            <span class="avatar-hint">點擊上傳頭像</span>
+            <input type="file" id="avatar-input" accept="image/*" onchange="uploadAvatar(event)">
+          </div>
+          <div class="profile-fields">
+            <div class="field-row"><label>名字</label><input id="p-name" oninput="saveProfile()"></div>
+            <div class="field-row"><label>品種</label><input id="p-species" placeholder="玄鳳、虎皮…" oninput="saveProfile()"></div>
+            <div class="field-row"><label>出生日期</label><input id="p-dob" type="date" oninput="saveProfile();updateAge()"></div>
+            <div id="age-display" class="age-display"></div>
+            <div class="field-row"><label>性別</label>
+              <select id="p-gender" onchange="saveProfile()">
+                <option value="">不確定</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </div>
+            <div class="field-row"><label>腳環號碼</label><input id="p-band" placeholder="腳環 / 晶片" oninput="saveProfile()"></div>
+            <div class="field-row"><label>來源</label><input id="p-origin" placeholder="店家、繁殖者…" oninput="saveProfile()"></div>
+            <div class="field-row"><label>緊急聯絡</label><input id="p-vet-contact" placeholder="獸醫 / 聯絡人" oninput="saveProfile()"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weight tab -->
+    <div id="dtab-weight" class="tab-content">
+      <div class="card">
+        <h2>⚖️ 新增體重</h2>
+        <div class="weight-input-row">
+          <input type="date" id="w-date">
+          <input type="number" id="w-val" placeholder="公克" min="0" step="0.1">
+          <input type="text" id="w-note" class="note-in" placeholder="備註（可選）">
+          <button class="btn btn-primary" onclick="addWeight()">＋ 新增</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📈 體重趨勢</h2>
+        <div class="stat-row" id="weight-stats"></div>
+        <div class="chart-wrap"><canvas id="weight-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>📋 體重紀錄</h2>
+        <div id="weight-list" class="record-list"></div>
+      </div>
+    </div>
+
+    <!-- Vet tab -->
+    <div id="dtab-vet" class="tab-content">
+      <div class="card">
+        <h2>🏥 新增就醫紀錄</h2>
+        <div class="form-block">
+          <label>就醫日期</label><input type="date" id="v-date">
+          <label>診所 / 醫院</label><input type="text" id="v-clinic" placeholder="診所名稱">
+          <label>就醫原因</label><input type="text" id="v-reason" placeholder="定期健檢、發燒…">
+          <label>診斷 / 處置</label><textarea id="v-diagnosis" rows="3" placeholder="醫師說明"></textarea>
+          <label>用藥紀錄</label><input type="text" id="v-meds" placeholder="藥名、劑量">
+          <label>下次回診</label><input type="date" id="v-followup">
+          <button class="btn btn-accent" onclick="addVet()">＋ 新增</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📋 就醫歷史</h2>
+        <div id="vet-list" class="record-list"></div>
+      </div>
+    </div>
+
+    <!-- Notes tab -->
+    <div id="dtab-notes" class="tab-content">
+      <div class="card">
+        <h2>📝 新增備註</h2>
+        <div class="form-block">
+          <label>日期</label>
+          <input type="date" id="n-date">
+          <label>內容</label>
+          <textarea id="n-text" rows="3" placeholder="行為、飲食、換羽、心情…"></textarea>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);cursor:pointer;margin-bottom:10px;font-weight:normal;">
+            <input type="checkbox" id="n-pin"> 📌 置頂
+          </label>
+          <button class="btn btn-accent" onclick="addNote()">＋ 新增</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📋 所有備註</h2>
+        <div id="notes-list" class="record-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD BIRD MODAL ══ -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal">
+    <h3>🐦 新增鳥寶</h3>
+    <input type="text" id="new-bird-name" placeholder="鳥寶的名字" maxlength="20">
+    <input type="text" id="new-bird-species" placeholder="品種（可選）">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="addBird()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="save-toast" id="save-toast">✓ 已儲存</div>
+
+<script>
+// ══ Storage ══
+const get = k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } }
+const set = (k, v) => localStorage.setItem(k, JSON.stringify(v))
+
+// ══ State ══
+let birds = get('pb_birds') || []   // [{id, name, species}]
+let currentBirdId = null
+let weightChart = null
+
+// ══ Helpers ══
+function todayStr() { return new Date().toISOString().slice(0,10) }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function toast() {
+  const el = document.getElementById('save-toast')
+  el.classList.add('show')
+  clearTimeout(el._t)
+  el._t = setTimeout(() => el.classList.remove('show'), 1800)
+}
+
+// Bird-scoped storage keys
+const bKey = (birdId, k) => `pb_${birdId}_${k}`
+const getBird = (birdId, k) => get(bKey(birdId, k)) || []
+const setBird = (birdId, k, v) => set(bKey(birdId, k), v)
+const getProfile = birdId => get(bKey(birdId, 'profile')) || {}
+const setProfile = (birdId, v) => set(bKey(birdId, 'profile'), v)
+
+// ══ HOME ══
+function renderHome() {
+  renderSummary()
+  renderBirdGrid()
+  renderRecentActivity()
+}
+
+function renderSummary() {
+  const el = document.getElementById('summary-strip')
+  const totalVets = birds.reduce((s, b) => s + getBird(b.id, 'vets').length, 0)
+  const totalNotes = birds.reduce((s, b) => s + getBird(b.id, 'notes').length, 0)
+  el.innerHTML = `
+    <div class="summary-badge"><div class="val">${birds.length}</div><div class="lbl">鳥寶</div></div>
+    <div class="summary-badge"><div class="val">${totalVets}</div><div class="lbl">就醫紀錄</div></div>
+    <div class="summary-badge"><div class="val">${totalNotes}</div><div class="lbl">備註</div></div>`
+}
+
+function renderBirdGrid() {
+  const grid = document.getElementById('bird-grid')
+  let html = ''
+  birds.forEach(b => {
+    const p = getProfile(b.id)
+    const weights = getBird(b.id, 'weights')
+    const latest = weights.length ? weights[weights.length-1].val + ' g' : null
+    const avatarHtml = p.avatar
+      ? `<img src="${p.avatar}">`
+      : '🦜'
+    const ageStr = p.dob ? calcAge(p.dob) : (p.species || '')
+    html += `
+      <div class="bird-card" onclick="openBird('${b.id}')">
+        <button class="bird-del-btn" onclick="event.stopPropagation();deleteBird('${b.id}')" title="刪除">✕</button>
+        <div class="bird-avatar">${avatarHtml}</div>
+        <div class="bird-name">${esc(b.name)}</div>
+        ${ageStr ? `<div class="bird-sub">${esc(ageStr)}</div>` : ''}
+        ${latest ? `<div class="bird-latest-weight">${latest}</div>` : ''}
+      </div>`
+  })
+  html += `
+    <div class="add-bird-card" onclick="openAddBird()">
+      <span class="plus">＋</span>
+      <span>新增鳥寶</span>
+    </div>`
+  grid.innerHTML = html
+}
+
+function calcAge(dob) {
+  const b = new Date(dob), now = new Date()
+  let y = now.getFullYear() - b.getFullYear()
+  let m = now.getMonth() - b.getMonth()
+  if (m < 0) { y--; m += 12 }
+  if (y === 0) return `${m} 個月`
+  return `${y} 歲 ${m} 個月`
+}
+
+function renderRecentActivity() {
+  const el = document.getElementById('recent-list')
+  const all = []
+  birds.forEach(b => {
+    const p = getProfile(b.id)
+    const avatarHtml = p.avatar ? `<img src="${p.avatar}">` : '🦜'
+    getBird(b.id, 'weights').forEach(w =>
+      all.push({ date: w.date, birdName: b.name, avatar: avatarHtml,
+        text: `體重 ${w.val} g${w.note ? ' · ' + w.note : ''}`, type: 'weight' }))
+    getBird(b.id, 'vets').forEach(v =>
+      all.push({ date: v.date, birdName: b.name, avatar: avatarHtml,
+        text: v.reason + (v.clinic ? ` @ ${v.clinic}` : ''), type: 'vet' }))
+    getBird(b.id, 'notes').forEach(n =>
+      all.push({ date: n.date, birdName: b.name, avatar: avatarHtml,
+        text: n.text.slice(0,40) + (n.text.length > 40 ? '…' : ''), type: 'note' }))
+  })
+  all.sort((a,b) => b.date.localeCompare(a.date))
+  const recent = all.slice(0, 12)
+  if (!recent.length) {
+    el.innerHTML = '<div class="empty"><span class="e-icon">🕐</span>還沒有任何紀錄</div>'; return
+  }
+  const tagMap = { weight: 'tag-weight', vet: 'tag-vet', note: 'tag-note' }
+  const labelMap = { weight: '體重', vet: '就醫', note: '備註' }
+  el.innerHTML = recent.map(r => `
+    <div class="recent-item">
+      <div class="recent-bird-avatar">${r.avatar}</div>
+      <div class="recent-body">
+        <span class="recent-bird-name">${esc(r.birdName)}</span>
+        <span class="recent-date"> · ${r.date}</span><br>
+        ${esc(r.text)}
+      </div>
+      <span class="tag ${tagMap[r.type]}">${labelMap[r.type]}</span>
+    </div>`).join('')
+}
+
+// ══ Bird CRUD ══
+function openAddBird() {
+  document.getElementById('new-bird-name').value = ''
+  document.getElementById('new-bird-species').value = ''
+  document.getElementById('add-modal').classList.add('open')
+  setTimeout(() => document.getElementById('new-bird-name').focus(), 100)
+}
+function closeModal() { document.getElementById('add-modal').classList.remove('open') }
+
+function addBird() {
+  const name = document.getElementById('new-bird-name').value.trim()
+  if (!name) { alert('請輸入名字'); return }
+  const species = document.getElementById('new-bird-species').value.trim()
+  const id = 'b' + Date.now()
+  birds.push({ id, name, species })
+  set('pb_birds', birds)
+  // 同步寫入 profile，資料卡直接帶入不需重複填寫
+  setProfile(id, { name, species })
+  closeModal()
+  renderHome()
+  toast()
+}
+
+function deleteBird(id) {
+  const b = birds.find(b => b.id === id)
+  if (!b) return
+  if (!confirm(`確定要刪除「${b.name}」的所有資料嗎？`)) return
+  birds = birds.filter(b => b.id !== id)
+  set('pb_birds', birds)
+  // Clean up data
+  ;['weights','vets','notes','profile'].forEach(k =>
+    localStorage.removeItem(bKey(id, k)))
+  renderHome()
+}
+
+// ══ Navigation ══
+function goHome() {
+  document.getElementById('page-home').classList.add('active')
+  document.getElementById('page-detail').classList.remove('active')
+  currentBirdId = null
+  if (weightChart) { weightChart.destroy(); weightChart = null }
+  renderHome()
+}
+
+function openBird(id) {
+  currentBirdId = id
+  const b = birds.find(b => b.id === id)
+  document.getElementById('detail-header-name').textContent = b.name + ' 的日誌'
+  document.getElementById('page-home').classList.remove('active')
+  document.getElementById('page-detail').classList.add('active')
+  // Reset to profile tab
+  switchDetailTab('profile', document.querySelector('nav.tabs button'))
+  loadProfile()
+  setDefaultDates()
+}
+
+function switchDetailTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'))
+  document.getElementById('dtab-' + id).classList.add('active')
+  btn.classList.add('active')
+  if (id === 'weight') { renderWeightList(); renderWeightChart() }
+  if (id === 'vet') renderVetList()
+  if (id === 'notes') renderNotesList()
+}
+
+// ══ Profile ══
+function loadProfile() {
+  const p = getProfile(currentBirdId)
+  document.getElementById('p-name').value = p.name || birds.find(b=>b.id===currentBirdId)?.name || ''
+  document.getElementById('p-species').value = p.species || ''
+  document.getElementById('p-dob').value = p.dob || ''
+  document.getElementById('p-gender').value = p.gender || ''
+  document.getElementById('p-band').value = p.band || ''
+  document.getElementById('p-origin').value = p.origin || ''
+  document.getElementById('p-vet-contact').value = p.vetContact || ''
+  const av = document.getElementById('d-avatar')
+  av.innerHTML = p.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '🦜'
+  updateAge()
+}
+
+function saveProfile() {
+  const p = getProfile(currentBirdId)
+  const newP = {
+    ...p,
+    name: document.getElementById('p-name').value,
+    species: document.getElementById('p-species').value,
+    dob: document.getElementById('p-dob').value,
+    gender: document.getElementById('p-gender').value,
+    band: document.getElementById('p-band').value,
+    origin: document.getElementById('p-origin').value,
+    vetContact: document.getElementById('p-vet-contact').value,
+  }
+  setProfile(currentBirdId, newP)
+  // Update name in birds list
+  const b = birds.find(b => b.id === currentBirdId)
+  if (b) { b.name = newP.name || b.name; set('pb_birds', birds) }
+  document.getElementById('detail-header-name').textContent = (newP.name || '鳥寶') + ' 的日誌'
+  toast()
+}
+
+function updateAge() {
+  const dob = document.getElementById('p-dob').value
+  const el = document.getElementById('age-display')
+  if (!dob) { el.textContent = ''; return }
+  el.textContent = '🎂 ' + calcAge(dob)
+}
+
+function uploadAvatar(e) {
+  const file = e.target.files[0]; if (!file) return
+  // Compress before saving
+  const img = new Image()
+  const reader = new FileReader()
+  reader.onload = ev => {
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const size = 200
+      canvas.width = canvas.height = size
+      const ctx = canvas.getContext('2d')
+      // Crop center square
+      const s = Math.min(img.width, img.height)
+      const sx = (img.width - s) / 2, sy = (img.height - s) / 2
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size)
+      const data = canvas.toDataURL('image/jpeg', 0.75)
+      const p = getProfile(currentBirdId)
+      p.avatar = data
+      setProfile(currentBirdId, p)
+      document.getElementById('d-avatar').innerHTML =
+        `<img src="${data}" style="width:100%;height:100%;object-fit:cover;">`
+      toast()
+    }
+    img.src = ev.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+// ══ Weight ══
+function setDefaultDates() {
+  const t = todayStr()
+  ;['w-date','v-date','n-date'].forEach(id => document.getElementById(id).value = t)
+}
+
+function addWeight() {
+  const date = document.getElementById('w-date').value || todayStr()
+  const val = parseFloat(document.getElementById('w-val').value)
+  const note = document.getElementById('w-note').value.trim()
+  if (!val || isNaN(val)) { alert('請輸入體重數值'); return }
+  let ws = getBird(currentBirdId, 'weights')
+  ws.push({ id: Date.now(), date, val, note })
+  ws.sort((a,b) => a.date.localeCompare(b.date))
+  setBird(currentBirdId, 'weights', ws)
+  document.getElementById('w-val').value = ''
+  document.getElementById('w-note').value = ''
+  toast()
+  renderWeightList()
+  renderWeightChart()
+}
+
+function deleteWeight(id) {
+  let ws = getBird(currentBirdId, 'weights').filter(w => w.id !== id)
+  setBird(currentBirdId, 'weights', ws)
+  renderWeightList(); renderWeightChart()
+}
+
+function renderWeightList() {
+  const el = document.getElementById('weight-list')
+  const ws = [...getBird(currentBirdId, 'weights')].sort((a,b) => b.date.localeCompare(a.date))
+  if (!ws.length) { el.innerHTML = '<div class="empty"><span class="e-icon">⚖️</span>還沒有體重紀錄</div>'; return }
+  el.innerHTML = ws.map(w => `
+    <div class="record-item">
+      <span class="record-date">${w.date}</span>
+      <div class="record-body"><strong>${w.val} g</strong>${w.note ? `<br><span style="color:var(--muted);font-size:.8rem;">${esc(w.note)}</span>` : ''}</div>
+      <span class="tag tag-weight">體重</span>
+      <button class="record-del" onclick="deleteWeight(${w.id})">✕</button>
+    </div>`).join('')
+}
+
+function renderWeightChart() {
+  const ctx = document.getElementById('weight-chart').getContext('2d')
+  const ws = [...getBird(currentBirdId, 'weights')].sort((a,b) => a.date.localeCompare(b.date))
+  const statEl = document.getElementById('weight-stats')
+  if (ws.length) {
+    const vals = ws.map(w => w.val)
+    const latest = vals[vals.length-1], min = Math.min(...vals), max = Math.max(...vals)
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)
+    statEl.innerHTML = `
+      <div class="stat-badge"><div class="val">${latest}g</div><div class="lbl">最新</div></div>
+      <div class="stat-badge"><div class="val">${avg}g</div><div class="lbl">平均</div></div>
+      <div class="stat-badge"><div class="val">${min}g</div><div class="lbl">最輕</div></div>
+      <div class="stat-badge"><div class="val">${max}g</div><div class="lbl">最重</div></div>`
+  } else statEl.innerHTML = ''
+  if (weightChart) weightChart.destroy()
+  weightChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ws.map(w => w.date),
+      datasets: [{ label: '體重 (g)', data: ws.map(w => w.val),
+        borderColor: '#5a7a5c', backgroundColor: 'rgba(138,171,140,0.15)',
+        pointBackgroundColor: '#5a7a5c', pointRadius: 5, pointHoverRadius: 7,
+        tension: 0.35, fill: true }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  })
+}
+
+// ══ Vet ══
+function addVet() {
+  const date = document.getElementById('v-date').value || todayStr()
+  const reason = document.getElementById('v-reason').value.trim()
+  if (!reason) { alert('請填寫就醫原因'); return }
+  let vs = getBird(currentBirdId, 'vets')
+  vs.push({
+    id: Date.now(), date,
+    clinic: document.getElementById('v-clinic').value.trim(),
+    reason,
+    diagnosis: document.getElementById('v-diagnosis').value.trim(),
+    meds: document.getElementById('v-meds').value.trim(),
+    followup: document.getElementById('v-followup').value
+  })
+  vs.sort((a,b) => b.date.localeCompare(a.date))
+  setBird(currentBirdId, 'vets', vs)
+  ;['v-clinic','v-reason','v-diagnosis','v-meds','v-followup'].forEach(id => document.getElementById(id).value='')
+  toast(); renderVetList()
+}
+
+function deleteVet(id) {
+  setBird(currentBirdId, 'vets', getBird(currentBirdId, 'vets').filter(v => v.id !== id))
+  renderVetList()
+}
+
+function renderVetList() {
+  const el = document.getElementById('vet-list')
+  const vs = getBird(currentBirdId, 'vets')
+  if (!vs.length) { el.innerHTML = '<div class="empty"><span class="e-icon">🏥</span>還沒有就醫紀錄</div>'; return }
+  el.innerHTML = vs.map(v => `
+    <div class="record-item">
+      <span class="record-date">${v.date}</span>
+      <div class="record-body">
+        ${v.clinic ? `<strong>${esc(v.clinic)}</strong> · ` : ''}${esc(v.reason)}
+        ${v.diagnosis ? `<br><span style="color:var(--muted);font-size:.8rem;">診斷：${esc(v.diagnosis)}</span>` : ''}
+        ${v.meds ? `<br><span style="color:var(--bark);font-size:.78rem;">💊 ${esc(v.meds)}</span>` : ''}
+        ${v.followup ? `<br><span style="color:var(--accent);font-size:.78rem;">🗓 回診：${v.followup}</span>` : ''}
+      </div>
+      <span class="tag tag-vet">就醫</span>
+      <button class="record-del" onclick="deleteVet(${v.id})">✕</button>
+    </div>`).join('')
+}
+
+// ══ Notes ══
+function addNote() {
+  const date = document.getElementById('n-date').value || todayStr()
+  const text = document.getElementById('n-text').value.trim()
+  const pin = document.getElementById('n-pin').checked
+  if (!text) { alert('請輸入備註'); return }
+  let ns = getBird(currentBirdId, 'notes')
+  ns.push({ id: Date.now(), date, text, pin })
+  setBird(currentBirdId, 'notes', ns)
+  document.getElementById('n-text').value = ''
+  document.getElementById('n-pin').checked = false
+  toast(); renderNotesList()
+}
+
+function deleteNote(id) {
+  setBird(currentBirdId, 'notes', getBird(currentBirdId, 'notes').filter(n => n.id !== id))
+  renderNotesList()
+}
+
+function renderNotesList() {
+  const el = document.getElementById('notes-list')
+  const ns = [...getBird(currentBirdId, 'notes')].sort((a,b) => {
+    if (a.pin !== b.pin) return b.pin - a.pin
+    return b.date.localeCompare(a.date)
+  })
+  if (!ns.length) { el.innerHTML = '<div class="empty"><span class="e-icon">📝</span>還沒有備註</div>'; return }
+  el.innerHTML = ns.map(n => `
+    <div class="record-item" style="${n.pin ? 'border-color:var(--accent-light);background:#fffaf6;' : ''}">
+      <span class="record-date">${n.date}</span>
+      <div class="record-body">
+        ${n.pin ? '<span class="pin-badge">📌</span>' : ''}
+        <span style="white-space:pre-wrap;">${esc(n.text)}</span>
+      </div>
+      <span class="tag tag-note">備註</span>
+      <button class="record-del" onclick="deleteNote(${n.id})">✕</button>
+    </div>`).join('')
+}
+
+// ══ Modal keyboard ══
+document.getElementById('add-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal()
+})
+document.getElementById('new-bird-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addBird()
+})
+
+// ══ PWA ══
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {})
+}
+
+// ══ Init ══
+renderHome()
+</script>
+</body>
+</html>
