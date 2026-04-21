@@ -541,7 +541,7 @@ nav.tabs button:hover:not(.active) {
   <header>
     <span>🦜</span>
     <h1>鸚鵡日誌</h1>
-    <button class="back-btn" onclick="openFoodPage()" style="font-size:.82rem; margin-right:4px;">🥦 食物</button><button class="back-btn" onclick="openAddBird()" style="font-size:.82rem;">＋ 新增</button>
+    <button class="back-btn" onclick="openBackup()" style="font-size:.82rem; margin-right:4px;">💾 備份</button><button class="back-btn" onclick="openFoodPage()" style="font-size:.82rem; margin-right:4px;">🥦 食物</button><button class="back-btn" onclick="openAddBird()" style="font-size:.82rem;">＋ 新增</button>
   </header>
 
   <div class="home-wrap">
@@ -1242,18 +1242,111 @@ function deleteFoodItem(id) {
 }
 
 // Enter key for food search
+// food enter key - handled in init below
+
+// ══ Modal keyboard & init event listeners ══
 document.addEventListener('DOMContentLoaded', () => {
-  const fi = document.getElementById('food-new-name')
-  if (fi) fi.addEventListener('keydown', e => { if (e.key === 'Enter') addFoodItem() })
+  const addModal = document.getElementById('add-modal')
+  if (addModal) addModal.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal()
+  })
+  const birdName = document.getElementById('new-bird-name')
+  if (birdName) birdName.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addBird()
+  })
+  const foodName = document.getElementById('food-new-name')
+  if (foodName) foodName.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addFoodItem()
+  })
+  const backupModal = document.getElementById('backup-modal')
+  if (backupModal) backupModal.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeBackupModal()
+  })
 })
 
-// ══ Modal keyboard ══
-document.getElementById('add-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal()
-})
-document.getElementById('new-bird-name').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addBird()
-})
+
+// ══ Backup & Restore ══
+function openBackup() {
+  document.getElementById('backup-modal').classList.add('open')
+}
+function closeBackupModal() {
+  document.getElementById('backup-modal').classList.remove('open')
+  document.getElementById('import-file').value = ''
+}
+
+function exportBackup() {
+  // Collect all data
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    birds: birds,
+    foods: foods,
+    birdData: {}
+  }
+  birds.forEach(b => {
+    data.birdData[b.id] = {
+      profile: getProfile(b.id),
+      weights: getBird(b.id, 'weights'),
+      vets: getBird(b.id, 'vets'),
+      notes: getBird(b.id, 'notes'),
+    }
+  })
+
+  const json = JSON.stringify(data, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const date = new Date().toISOString().slice(0,10)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `鸚鵡日誌備份_${date}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  toast()
+}
+
+function importBackup(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result)
+      if (!data.version || !data.birds) {
+        alert('備份檔案格式不正確，請選擇正確的備份檔案'); return
+      }
+      if (!confirm(`確定要匯入備份嗎？\n匯出時間：${data.exportedAt?.slice(0,10) || '未知'}\n共 ${data.birds.length} 隻鳥寶\n\n⚠️ 現有資料將會被覆蓋！`)) return
+
+      // Restore birds list
+      birds = data.birds
+      set('pb_birds', birds)
+
+      // Restore foods
+      if (data.foods) {
+        foods = data.foods
+        set('pb_foods', foods)
+      }
+
+      // Restore each bird's data
+      if (data.birdData) {
+        Object.entries(data.birdData).forEach(([id, d]) => {
+          if (d.profile) setProfile(id, d.profile)
+          if (d.weights) setBird(id, 'weights', d.weights)
+          if (d.vets) setBird(id, 'vets', d.vets)
+          if (d.notes) setBird(id, 'notes', d.notes)
+        })
+      }
+
+      closeBackupModal()
+      renderHome()
+      alert(`✅ 匯入成功！已還原 ${birds.length} 隻鳥寶的資料`)
+    } catch (err) {
+      alert('匯入失敗：檔案格式錯誤')
+    }
+  }
+  reader.readAsText(file)
+}
+
+// backup modal click - handled in init below
 
 // ══ PWA ══
 if ('serviceWorker' in navigator) {
@@ -1311,6 +1404,34 @@ renderHome()
         </select>
         <button class="btn btn-primary" onclick="addFoodItem()">新增</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BACKUP MODAL ══ -->
+<div class="modal-bg" id="backup-modal">
+  <div class="modal" style="max-width:420px;">
+    <h3>💾 資料備份與還原</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+      iPhone 用戶建議定期匯出備份，避免刪除主畫面圖示時資料遺失。
+    </p>
+    <!-- Export -->
+    <div style="background:var(--cream);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:.88rem;color:var(--sage-dark);margin-bottom:8px;">📤 匯出備份</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;">將所有鳥寶資料儲存成 JSON 檔案</div>
+      <button class="btn btn-primary" onclick="exportBackup()" style="width:100%;justify-content:center;">下載備份檔案</button>
+    </div>
+    <!-- Import -->
+    <div style="background:var(--cream);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-weight:700;font-size:.88rem;color:var(--accent);margin-bottom:8px;">📥 匯入備份</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;">⚠️ 匯入後會覆蓋現有所有資料，請確認後再操作</div>
+      <label style="display:block;width:100%;">
+        <span class="btn btn-accent" style="width:100%;justify-content:center;display:flex;cursor:pointer;">選擇備份檔案</span>
+        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importBackup(event)">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBackupModal()">關閉</button>
     </div>
   </div>
 </div>
