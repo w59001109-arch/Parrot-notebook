@@ -450,6 +450,88 @@ nav.tabs button:hover:not(.active) {
 .save-toast.show { opacity: 1; transform: translateY(0); }
 
 #avatar-input { display: none; }
+
+/* ══ Food page ══ */
+.food-search-wrap {
+  position: relative; margin-bottom: 16px;
+}
+.food-search-wrap input {
+  width: 100%;
+  border: 2px solid var(--sage-light);
+  border-radius: 40px;
+  padding: 10px 18px 10px 40px;
+  font-family: inherit; font-size: .92rem;
+  background: var(--white); outline: none;
+  transition: border-color .2s;
+}
+.food-search-wrap input:focus { border-color: var(--sage-dark); }
+.food-search-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%); font-size: 1rem; pointer-events: none;
+}
+.food-filter-row {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.filter-btn {
+  font-family: inherit; font-size: .75rem;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1.5px solid var(--sage-light);
+  background: transparent; color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.filter-btn.active { background: var(--sage-dark); border-color: var(--sage-dark); color: var(--white); font-weight: 700; }
+.filter-btn:hover:not(.active) { background: var(--sage-light); color: var(--sage-dark); }
+.filter-btn.danger-filter.active { background: #c05050; border-color: #c05050; }
+.filter-btn.danger-filter:hover:not(.active) { background: #ffd6d6; color: #a03030; border-color: #f0a0a0; }
+
+.food-section-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: .88rem; font-weight: 700;
+  margin: 14px 0 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.food-grid {
+  display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px;
+}
+.food-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: .8rem; font-weight: 700;
+  border: 1.5px solid transparent;
+  transition: all .15s;
+}
+.food-chip.safe {
+  background: rgba(197,219,198,0.35);
+  border-color: var(--sage-light);
+  color: var(--sage-dark);
+}
+.food-chip.danger {
+  background: rgba(255,214,214,0.4);
+  border-color: #f0a0a0;
+  color: #a03030;
+}
+.food-chip .del-chip {
+  background: none; border: none; cursor: pointer;
+  color: inherit; opacity: .45; font-size: .75rem;
+  padding: 0 0 0 2px; line-height: 1;
+  transition: opacity .15s;
+}
+.food-chip .del-chip:hover { opacity: 1; }
+.food-add-row {
+  display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+}
+.food-add-row input, .food-add-row select {
+  border: 1.5px solid var(--sage-light);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: inherit; font-size: .85rem;
+  background: var(--cream); outline: none;
+  transition: border-color .2s;
+}
+.food-add-row input { flex: 1; min-width: 120px; }
+.food-add-row input:focus, .food-add-row select:focus { border-color: var(--sage-dark); }
+.no-result { text-align: center; color: var(--muted); padding: 20px 0; font-size: .85rem; }
 </style>
 </head>
 <body>
@@ -459,7 +541,7 @@ nav.tabs button:hover:not(.active) {
   <header>
     <span>🦜</span>
     <h1>鸚鵡日誌</h1>
-    <button class="back-btn" onclick="openAddBird()" style="font-size:.82rem;">＋ 新增鳥寶</button>
+    <button class="back-btn" onclick="openFoodPage()" style="font-size:.82rem; margin-right:4px;">🥦 食物</button><button class="back-btn" onclick="openAddBird()" style="font-size:.82rem;">＋ 新增</button>
   </header>
 
   <div class="home-wrap">
@@ -1010,6 +1092,161 @@ function renderNotesList() {
     </div>`).join('')
 }
 
+
+// ══ Food List ══
+const DEFAULT_FOODS = [
+  // 可食用 - 蔬菜
+  {id:1, name:'紅蘿蔔', type:'safe', cat:'蔬菜'},
+  {id:2, name:'花椰菜', type:'safe', cat:'蔬菜'},
+  {id:3, name:'菠菜', type:'safe', cat:'蔬菜'},
+  {id:4, name:'地瓜葉', type:'safe', cat:'蔬菜'},
+  {id:5, name:'玉米', type:'safe', cat:'蔬菜'},
+  {id:6, name:'豌豆', type:'safe', cat:'蔬菜'},
+  {id:7, name:'甜椒', type:'safe', cat:'蔬菜'},
+  {id:8, name:'南瓜', type:'safe', cat:'蔬菜'},
+  {id:9, name:'芹菜', type:'safe', cat:'蔬菜'},
+  {id:10, name:'小黃瓜', type:'safe', cat:'蔬菜'},
+  // 可食用 - 水果
+  {id:11, name:'蘋果（去籽）', type:'safe', cat:'水果'},
+  {id:12, name:'芒果', type:'safe', cat:'水果'},
+  {id:13, name:'木瓜', type:'safe', cat:'水果'},
+  {id:14, name:'藍莓', type:'safe', cat:'水果'},
+  {id:15, name:'草莓', type:'safe', cat:'水果'},
+  {id:16, name:'西瓜（去籽）', type:'safe', cat:'水果'},
+  {id:17, name:'香蕉', type:'safe', cat:'水果'},
+  {id:18, name:'奇異果', type:'safe', cat:'水果'},
+  {id:19, name:'葡萄（去籽）', type:'safe', cat:'水果'},
+  {id:20, name:'哈密瓜', type:'safe', cat:'水果'},
+  // 可食用 - 堅果
+  {id:21, name:'杏仁（無鹽）', type:'safe', cat:'堅果'},
+  {id:22, name:'核桃（無鹽）', type:'safe', cat:'堅果'},
+  {id:23, name:'松子', type:'safe', cat:'堅果'},
+  {id:24, name:'葵瓜子（無鹽）', type:'safe', cat:'堅果'},
+  {id:25, name:'南瓜籽', type:'safe', cat:'堅果'},
+  // 可食用 - 穀物
+  {id:26, name:'燕麥', type:'safe', cat:'穀物'},
+  {id:27, name:'糙米', type:'safe', cat:'穀物'},
+  {id:28, name:'小米', type:'safe', cat:'穀物'},
+  {id:29, name:'藜麥', type:'safe', cat:'穀物'},
+  {id:30, name:'全麥麵包（少量）', type:'safe', cat:'穀物'},
+  // 可食用 - 蛋白質
+  {id:31, name:'水煮蛋', type:'safe', cat:'蛋白質'},
+  {id:32, name:'雞胸肉（熟）', type:'safe', cat:'蛋白質'},
+  // 不可食用 - 有毒植物
+  {id:33, name:'酪梨', type:'danger', cat:'有毒植物'},
+  {id:34, name:'聖誕紅', type:'danger', cat:'有毒植物'},
+  {id:35, name:'黛粉葉', type:'danger', cat:'有毒植物'},
+  {id:36, name:'夾竹桃', type:'danger', cat:'有毒植物'},
+  {id:37, name:'水仙花', type:'danger', cat:'有毒植物'},
+  {id:38, name:'鬱金香', type:'danger', cat:'有毒植物'},
+  // 不可食用 - 危險食物
+  {id:39, name:'巧克力', type:'danger', cat:'危險食物'},
+  {id:40, name:'酒精', type:'danger', cat:'危險食物'},
+  {id:41, name:'咖啡因', type:'danger', cat:'危險食物'},
+  {id:42, name:'洋蔥', type:'danger', cat:'危險食物'},
+  {id:43, name:'大蒜', type:'danger', cat:'危險食物'},
+  {id:44, name:'鹽（高鹽食物）', type:'danger', cat:'危險食物'},
+  {id:45, name:'蘋果籽', type:'danger', cat:'危險食物'},
+  {id:46, name:'桃子核', type:'danger', cat:'危險食物'},
+  {id:47, name:'生馬鈴薯', type:'danger', cat:'危險食物'},
+  {id:48, name:'蘑菇', type:'danger', cat:'危險食物'},
+]
+
+let foodFilter = 'all'
+let foods = get('pb_foods')
+if (!foods) { foods = DEFAULT_FOODS; set('pb_foods', foods) }
+
+const CAT_EMOJI = {
+  '蔬菜':'🥦','水果':'🍎','堅果':'🥜','穀物':'🌾','蛋白質':'🥚','有毒植物':'🌿','危險食物':'⚠️'
+}
+const SAFE_CATS = ['蔬菜','水果','堅果','穀物','蛋白質']
+const DANGER_CATS = ['有毒植物','危險食物']
+
+function openFoodPage() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-food').classList.add('active')
+  document.getElementById('food-search').value = ''
+  foodFilter = 'all'
+  document.querySelectorAll('.filter-btn').forEach((b,i) => b.classList.toggle('active', i===0))
+  renderFoodList()
+}
+
+function setFoodFilter(f, btn) {
+  foodFilter = f
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  renderFoodList()
+}
+
+function renderFoodList() {
+  const el = document.getElementById('food-list')
+  const q = document.getElementById('food-search').value.trim().toLowerCase()
+  let list = foods.filter(f => {
+    if (q && !f.name.toLowerCase().includes(q)) return false
+    if (foodFilter === 'all') return true
+    if (foodFilter === 'safe') return f.type === 'safe'
+    if (foodFilter === 'danger') return f.type === 'danger'
+    return f.cat === foodFilter
+  })
+
+  if (!list.length) {
+    el.innerHTML = '<div class="no-result">🔍 找不到符合的食物</div>'; return
+  }
+
+  // Group by category
+  const groups = {}
+  list.forEach(f => {
+    if (!groups[f.cat]) groups[f.cat] = []
+    groups[f.cat].push(f)
+  })
+
+  // Order: safe cats first, then danger
+  const orderedCats = [...SAFE_CATS, ...DANGER_CATS].filter(c => groups[c])
+
+  let html = ''
+  orderedCats.forEach(cat => {
+    const items = groups[cat]
+    const isDanger = DANGER_CATS.includes(cat)
+    html += `<div class="food-section-title">${CAT_EMOJI[cat] || ''} ${cat}
+      <span style="font-size:.7rem;font-weight:400;color:var(--muted);">(${items.length})</span>
+    </div>
+    <div class="food-grid">`
+    items.forEach(f => {
+      html += `<span class="food-chip ${f.type}">
+        ${esc(f.name)}
+        <button class="del-chip" onclick="deleteFoodItem(${f.id})" title="刪除">✕</button>
+      </span>`
+    })
+    html += '</div>'
+  })
+  el.innerHTML = html
+}
+
+function addFoodItem() {
+  const name = document.getElementById('food-new-name').value.trim()
+  if (!name) { alert('請輸入食物名稱'); return }
+  const type = document.getElementById('food-new-type').value
+  const cat = document.getElementById('food-new-cat').value
+  const id = Date.now()
+  foods.push({ id, name, type, cat })
+  set('pb_foods', foods)
+  document.getElementById('food-new-name').value = ''
+  toast()
+  renderFoodList()
+}
+
+function deleteFoodItem(id) {
+  foods = foods.filter(f => f.id !== id)
+  set('pb_foods', foods)
+  renderFoodList()
+}
+
+// Enter key for food search
+document.addEventListener('DOMContentLoaded', () => {
+  const fi = document.getElementById('food-new-name')
+  if (fi) fi.addEventListener('keydown', e => { if (e.key === 'Enter') addFoodItem() })
+})
+
 // ══ Modal keyboard ══
 document.getElementById('add-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal()
@@ -1026,5 +1263,56 @@ if ('serviceWorker' in navigator) {
 // ══ Init ══
 renderHome()
 </script>
+
+<!-- ══ FOOD PAGE ══ -->
+<div id="page-food" class="page">
+  <header>
+    <button class="back-btn" onclick="goHome()">← 返回</button>
+    <h1>食物安全清單</h1>
+  </header>
+  <div class="home-wrap">
+    <!-- Search -->
+    <div class="food-search-wrap">
+      <span class="food-search-icon">🔍</span>
+      <input type="text" id="food-search" placeholder="搜尋食物…" oninput="renderFoodList()">
+    </div>
+    <!-- Filter tabs -->
+    <div class="food-filter-row">
+      <button class="filter-btn active" onclick="setFoodFilter('all', this)">全部</button>
+      <button class="filter-btn" onclick="setFoodFilter('safe', this)">✅ 可食用</button>
+      <button class="filter-btn danger-filter" onclick="setFoodFilter('danger', this)">❌ 不可食用</button>
+      <button class="filter-btn" onclick="setFoodFilter('蔬菜', this)">🥦 蔬菜</button>
+      <button class="filter-btn" onclick="setFoodFilter('水果', this)">🍎 水果</button>
+      <button class="filter-btn" onclick="setFoodFilter('堅果', this)">🥜 堅果</button>
+      <button class="filter-btn" onclick="setFoodFilter('穀物', this)">🌾 穀物</button>
+      <button class="filter-btn" onclick="setFoodFilter('蛋白質', this)">🥚 蛋白質</button>
+      <button class="filter-btn danger-filter" onclick="setFoodFilter('有毒植物', this)">🌿 有毒植物</button>
+      <button class="filter-btn danger-filter" onclick="setFoodFilter('危險食物', this)">⚠️ 危險食物</button>
+    </div>
+    <!-- Food list -->
+    <div id="food-list"></div>
+    <!-- Add food -->
+    <div class="card">
+      <h2>＋ 新增食物</h2>
+      <div class="food-add-row">
+        <input type="text" id="food-new-name" placeholder="食物名稱">
+        <select id="food-new-type">
+          <option value="safe">✅ 可食用</option>
+          <option value="danger">❌ 不可食用</option>
+        </select>
+        <select id="food-new-cat">
+          <option value="蔬菜">🥦 蔬菜</option>
+          <option value="水果">🍎 水果</option>
+          <option value="堅果">🥜 堅果</option>
+          <option value="穀物">🌾 穀物</option>
+          <option value="蛋白質">🥚 蛋白質</option>
+          <option value="有毒植物">🌿 有毒植物</option>
+          <option value="危險食物">⚠️ 危險食物</option>
+        </select>
+        <button class="btn btn-primary" onclick="addFoodItem()">新增</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
