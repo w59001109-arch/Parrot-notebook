@@ -1,8 +1,10 @@
 {
+  "id": "/Parrot-notebook/",
+  "scope": "/Parrot-notebook/",
   "name": "鸚鵡日誌",
   "short_name": "鸚鵡日誌",
   "description": "記錄鸚鵡的體重、就醫與備註",
-  "start_url": "./index.html",
+  "start_url": "/Parrot-notebook/",
   "display": "standalone",
   "background_color": "#faf6ef",
   "theme_color": "#5a7a5c",
